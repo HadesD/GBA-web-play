@@ -1,0 +1,278 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- manifest="test.manifest" -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="GBA" />
+    <meta name="format-detection" content="telephone=no" />
+    <!-- <meta http&#45;equiv="Content&#45;Security&#45;Policy" content="default&#45;src *; script&#45;src *;img&#45;src * 'self' data: http:;" /> -->
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1.0, user-scalable=no" />
+
+    <!-- iPhone (Retina)
+    <link rel="apple-touch-startup-image" href="assets/index/start.png" media="(device-width: 320px) and (device-height: 480px)" />-->
+
+    <!-- iPhone 5 -->
+
+    <link href="assets/images/5start.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" rel="apple-touch-startup-image" />
+
+    <!-- <link rel="apple-touch-startup-image" href="assets/images/5start.png" /> -->
+
+    <link rel="apple-touch-icon" href="assets/images/icon120.png" sizes="120x120" />
+
+    <link rel="stylesheet" href="assets/css/index.css" />
+    <link rel="stylesheet" href="assets/css/gba.css" />
+    <title>GameBoy Advance</title>
+    <link rel="icon" href="favicon.ico" />
+    <script type="text/javascript">
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./service-worker.js', {scope: '.'})
+          .then(function(reg) {
+            // registration worked
+            console.log('Registration succeeded. Scope is ' + reg.scope);
+          }).catch(function(error) {
+            // registration failed
+            console.log('Registration failed with ' + error);
+          })
+        ;
+      }
+    </script>
+  </head>
+  <body>
+    <div id="debug"></div>
+    <div id="appcontainer">
+      <div id="splash">
+        <img src="assets/images/load.png" width="140" height"140" id="splashImg" />
+      </div>
+      <div id="container">
+        <canvas id="ui"></canvas>
+        <!-- <canvas id="gameboy" width="320" height="288"></canvas> -->
+        <!-- <canvas id="gba" width="480" height="320"></canvas> -->
+        <canvas id="emulator" width="480" height="320"></canvas>
+      </div>
+      <div id="external">
+        <div class="menuHead">
+          <img class="backBtn" src="assets/images/back.svg" onclick="closeBrowser()" />
+          <div class="menuTitle">Download a ROM...</div>
+        </div>
+        <div class="menuCont">
+          <div id="iframeWrap">
+            <iframe seamless="seamless" id="extiFrame"></iframe>
+          </div>
+        </div>
+      </div>
+
+      <div class="menuCtr" id="fileCtr">
+        <div id="submenus"> <!-- begin submenus -->
+          <div class="submenu">
+            <div class="menuHead">
+              <img class="backBtn mbackBtn" src="assets/images/back.svg">
+              <img class="rTopBtn" id="editROM" src="assets/images/edit.svg">
+              <div class="menuTitle">Select A ROM</div>
+            </div>
+            <div class="menuCont">
+              <div class="selRomScroll">
+                <div class="fileEntry" style="position:relative;">
+                  <img src="assets/images/upload.svg" class="entryIcon" width="50" height="50" />
+                  <span class="entryText">Choose From This Device</span>
+                  <input type="file" accept=".gb,.gbc,.gba,.zip" id="chooseFile" style="opacity:0;position:absolute;left:0;top:0;width:100%;height:100%;" />
+                </div>
+                <div class="fileEntry" id="chooseROMSelection" style="display: none;">
+                  <img src="assets/images/blank-file.svg" class="entryIcon" width="50" height="50" />
+                  <div class="entryElm">
+                    <select class="controlDrop" onchange="chooseROMSelection(event);" style="border-color: #009489;width: 85%;"></select>
+                    <input type="text" class="textControl" placeholder="Type name of ROM..." style="border-color: #009489;display:none;width: 85%;" oninput="chooseROMSearchOnInput(event);" />
+                    <img src="assets/images/expand-button.svg" width="20" height="20" style="vertical-align: text-bottom;" onclick="chooseROMSearchSectionToggle(event)" />
+                  </div>
+                  <div id="chooseROMSearchResult"></div>
+                </div>
+                <div class="fileEntry" onclick="chooseURL();">
+                  <img src="assets/images/URL.svg" class="entryIcon" width="50" height="50">
+                  <span class="entryText">Download from URL</span>
+                </div>
+                <div class="sectDivider">Recent Files</div>
+                <div id="rFCont"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="submenu" style="left:100%">
+            <div class="menuHead" style="background-color:#B90546">
+              <div class="menuTitle">States</div>
+              <img class="backBtn mbackBtn" src="assets/images/back.svg">
+              <img class="rTopBtn" id="editState" src="assets/images/edit.svg">
+            </div>
+            <div class="menuCont">
+              <div class="selRomScroll">
+                <div class="fileEntry" onclick="saveCurrentState();" id="addState">
+                  <img src="assets/images/add.svg" class="entryIcon" width="50" height="50" />
+                  <span class="entryText">Save Current State</span>
+                </div>
+                <div id="stateCont"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="submenu" style="left:200%">
+            <div class="menuHead" style="background-color:#DDB10A">
+              <img class="backBtn mbackBtn" src="assets/images/back.svg" />
+              <div class="menuTitle">Controls</div>
+            </div>
+            <div class="menuCont">
+              <div class="selRomScroll">
+                <div id="controlsMain">
+                  <div id="thumbsCont">
+                    <div class="device" id="pThumbBorder">
+                      <img src="assets/images/portPT.svg"><br />
+                      <canvas width="75" height="133" style="background-color:white" id="portraitThumb"></canvas><br>
+                      <img src="assets/images/homeBtn.svg">
+                    </div>
+                    <div class="device" id="lThumbBorder">
+                      <img src="assets/images/landPT.svg" style="vertical-align: middle;" />
+                      <canvas width="133" height="75" style="vertical-align: middle; background-color:white" id="landscapeThumb"></canvas>
+                      <img src="assets/images/homeBtn.svg" style="vertical-align: middle;" />
+                    </div>
+                  </div>
+                  <div id="cDropPad">
+                    <select class="controlDrop" id="controlsDrop" onchange="changeControls();">
+                      <option>Default</option>
+                      <option>Test Controls</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="sectDivider" style="background-color:#DDB10A">Edit Control Schemes</div>
+                <div class="fileEntry" onclick="downloadStyle()">
+                  <img src="assets/images/downControls.svg" class="entryIcon" width="50" height="50" >
+                  <span class="entryText">Download From URL</span>
+                </div>
+                <div class="fileEntry" onclick="renameStyle()">
+                  <img src="assets/images/renameControls.svg" class="entryIcon" width="50" height="50">
+                  <span class="entryText">Rename Current Scheme</span>
+                </div>
+                <div class="fileEntry" onclick="deleteStyle()">
+                  <img src="assets/images/deleteControls.svg" class="entryIcon" width="50" height="50">
+                  <span class="entryText">Delete Current Scheme</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="submenu" style="left:300%">
+            <div class="menuHead" style="background-color:#79AD36">
+              <img class="backBtn mbackBtn" src="assets/images/back.svg">
+              <div class="menuTitle">Options</div>
+            </div>
+            <div class="menuCont">
+              <div class="selRomScroll">
+                <div class="fileEntry">
+                  <img src="assets/images/engineer.svg" class="entryIcon" width="50" height="50">
+                  <span class="entryText">Load Bios</span>
+                  <input type="checkbox" id="enableLoadBiosControl" style="position: absolute; right: 4vw; top: 15%; zoom:2;" />
+                </div>
+                <div class="fileEntry">
+                  <img src="assets/images/speaker.svg" class="entryIcon" width="50" height="50">
+                  <div class="entryElm">
+                    <input type="range" id="audioEngineVolumeControl" min="0" max="1" step="0.01" style="width: 100%; height:100%;" />
+                  </div>
+                </div>
+                <div class="fileEntry">
+                  <img src="assets/images/download-speed.svg" class="entryIcon" width="50" height="50">
+                  <div class="entryElm">
+                    <input type="range" id="speedControl" min="0" max="4000" step="0.01" style="width: 100%; height:100%;" />
+                  </div>
+                </div>
+                <div class="sectDivider" style="background-color:#79AD36">
+                  Actions
+                </div>
+                <div class="fileEntry" onclick="initROMSelection(event, true);">
+                  <img src="assets/images/update-arrows.svg" class="entryIcon" width="50" height="50">
+                  <span class="entryText" onclick="event.target.parentElement.click();event.stopPropagation();">Update ROMs in Selection</span>
+                </div>
+                <div class="sectDivider" style="background-color:#79AD36">About</div>
+                <div class="fileEntry">
+                  <span class="entryText">
+                    (c) 2012 – 2013 Jeffrey Pfau
+                  </span>
+                </div>
+                <div class="fileEntry">
+                  <span class="entryText">
+                    (c) 2017 riperiperi (Amebo)
+                  </span>
+                </div>
+                <div class="fileEntry">
+                  <span class="entryText">
+                    (c) 2018 Dark.Hades
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="menuBtmBar">
+          <div class="btmButton" style="left:15%" id="mb1">
+            <div class="buttonbg" id="bb1"></div>
+            <img src="assets/images/ROMs.svg" style="position:absolute;">
+          </div>
+          <div class="btmButton" style="left:38.3%" id="mb2">
+            <div class="buttonbg" id="bb2"></div>
+            <img src="assets/images/States.svg" style="position:absolute;">
+          </div>
+          <div class="btmButton" style="left:61.7%" id="mb3">
+            <div class="buttonbg" id="bb3"></div>
+            <img src="assets/images/Controls.svg" style="position:absolute;">
+          </div>
+          <div class="btmButton" style="left:85%" id="mb4">
+            <div class="buttonbg" id="bb4"></div>
+            <img src="assets/images/Options.svg" style="position:absolute;">
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript">
+      window.onerror = function(errorMsg, url, lineNumber, column, errorObj) {
+        var p = navigator.platform
+        if ((p === 'iPad') || (p === 'iPhone') || (p === 'iPod'))
+        {
+          alert(
+            JSON.stringify(errorMsg)
+            + ' line: '
+            + lineNumber
+          );
+        }
+      };
+    </script>
+    <script type="text/javascript" src="assets/js/global.js"></script>
+    <script type="text/javascript" src="assets/libs/jszip/jszip.js"></script>
+    <script type="text/javascript" src="assets/libs/jszip/jszip-inflate.js"></script>
+    <script type="text/javascript" src="assets/libs/jszip/jszip-deflate.js"></script>
+    <script type="text/javascript" src="assets/libs/jszip/jszip-load.js"></script>
+
+    <!-- Amebo -->
+    <script type="text/javascript" src="assets/libs/amebo/amebo.js" id="amebo_script"></script>
+    <script type="text/javascript" src="assets/js/iosJSnode.js"></script>
+    <script type="text/javascript" src="assets/js/scrollfix.js"></script>
+    <!-- Amebo -->
+    <!-- GBAjs -->
+    <script src="assets/libs/GBA.js/js/util.js"></script>
+    <script src="assets/libs/GBA.js/js/core.js"></script>
+    <script src="assets/libs/GBA.js/js/arm.js"></script>
+    <script src="assets/libs/GBA.js/js/thumb.js"></script>
+    <script src="assets/libs/GBA.js/js/mmu.js"></script>
+    <script src="assets/libs/GBA.js/js/io.js"></script>
+    <script src="assets/libs/GBA.js/js/audio.js"></script>
+    <script src="assets/libs/GBA.js/js/video.js"></script>
+    <script src="assets/libs/GBA.js/js/video/proxy.js"></script>
+    <script src="assets/libs/GBA.js/js/video/software.js"></script>
+    <script src="assets/libs/GBA.js/js/irq.js"></script>
+    <script src="assets/libs/GBA.js/js/keypad.js"></script>
+    <script src="assets/libs/GBA.js/js/sio.js"></script>
+    <script src="assets/libs/GBA.js/js/savedata.js"></script>
+    <script src="assets/libs/GBA.js/js/gpio.js"></script>
+    <script src="assets/libs/GBA.js/js/gba.js"></script>
+    <script src="assets/libs/GBA.js/resources/xhr.js"></script>
+    <script src="assets/js/gba.js"></script>
+    <!-- GBAjs -->
+
+    <script type="text/javascript" src="assets/js/index.js"></script>
+  </body>
+</html>
