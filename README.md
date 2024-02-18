@@ -41,5 +41,4 @@ Frontend: https://hadesd.github.io/GameBoyAdvance/index.html
 
 - Follow https://github.com/endrift/gbajs
 - Follow https://github.com/riperiperi/amebo
-- MIT (c) Hai Le (a.k.a Dark.Hades)
-
+- MIT (c) HD
